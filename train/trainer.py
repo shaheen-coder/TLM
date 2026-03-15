@@ -47,3 +47,5 @@ model.compile(
 )
 
 model.fit(trainer_dataset, epochs=2)
+
+model.save("tlm.keras")

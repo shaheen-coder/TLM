@@ -9,6 +9,7 @@ from model.config import ModelConfig
 class TinyLM(Model):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()
+        self.config = config
         # shared embedding
         self.embedding = Embedding(
             input_dim=config.vocab_size,
@@ -42,6 +43,20 @@ class TinyLM(Model):
             trainable=True,
             name="logits_bias",
         )
+
+    def get_config(self):
+        return {
+            "config": {
+                "vocab_size": self.config.vocab_size,
+                "d_model": self.config.d_model,
+                "dropout": self.config.dropout,
+            }
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        cfg = ModelConfig(**config["config"])
+        return cls(cfg)
 
     def encoder(
         self, encoder_input: tf.Tensor, training: bool = False

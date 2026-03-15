@@ -1,6 +1,8 @@
+import argparse
 from transformers import PreTrainedTokenizerFast
 from tokenizers import Tokenizer
 import tensorflow as tf
+from tensorflow.keras.models import load_model
 
 
 class TinyLMInference:
@@ -102,3 +104,28 @@ class TinyLMInference:
 
         text = self.tokenizer.decode(generated)
         return text
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="TinyLM Inference")
+    parser.add_argument("prompt", type=str, help="Input prompt")
+    parser.add_argument("--model-path", type=str, default="tiny_lm_model.keras")
+    parser.add_argument("--mode", type=str, choices=["greedy", "top"], default="greedy")
+    parser.add_argument("--temp", type=float, default=1.0)
+    parser.add_argument("--topk", type=int, default=None)
+    parser.add_argument("--topp", type=float, default=None)
+    parser.add_argument("--max-len", type=int, default=50)
+    args = parser.parse_args()
+
+    model = load_model(args.model_path)
+    raw_tok = Tokenizer.from_file("tokenizers/tiny_lm_tokenizer.json")
+    bos_id = raw_tok.token_to_id("[AI]")
+    eos_id = raw_tok.token_to_id("[END]")
+
+    inferencer = TinyLMInference(model, bos_id, eos_id, max_len=args.max_len)
+    response = inferencer.generate(
+        args.prompt, args.mode, args.temp, args.topk, args.topp
+    )
+
+    print(f"Prompt  : {args.prompt}")
+    print(f"Response: {response}")
