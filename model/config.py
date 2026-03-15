@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class ModelConf:
+class ModelConfig:
     vocab_size: int = 15000
     d_model: int = 512
     lstm: int = 512

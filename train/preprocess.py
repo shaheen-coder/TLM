@@ -69,8 +69,11 @@ class PreTokens:
     def get_tokens(self):
         for file_path in self._list_csv_files():
             for row in self._read_csv(file_path):
-                prompt_ids, response_ids = self._encode_tokens(
-                    row["prompt"], row["response"]
-                )
+                try:
+                    prompt_ids, response_ids = self._encode_tokens(
+                        row["prompt"], row["response"]
+                    )
 
-                yield prompt_ids, response_ids
+                    yield prompt_ids, response_ids
+                except ValueError:
+                    continue

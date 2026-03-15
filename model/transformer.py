@@ -3,11 +3,11 @@ from tensorflow.keras.layers import Embedding, LSTM, Dropout
 import tensorflow as tf
 
 # custom imoprt
-from model.config import ModelConf
+from model.config import ModelConfig
 
 
 class TinyLM(Model):
-    def __init__(self, config: ModelConf) -> None:
+    def __init__(self, config: ModelConfig) -> None:
         super().__init__()
         # shared embedding
         self.embedding = Embedding(
@@ -71,7 +71,8 @@ class TinyLM(Model):
 
     def call(self, inputs: tf.Tensor, training: bool = False) -> tf.Tensor:
 
-        encoder_input, decoder_input = inputs
+        encoder_input = inputs[0]
+        decoder_input = inputs[1]
         # ------------- Encoder Part -------------
         encoder_state = self.encoder(encoder_input, training=training)
         # ------------- Decoder Part -------------
