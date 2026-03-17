@@ -25,7 +25,7 @@ trainer_dataset = Dataset.from_generator(
 )
 
 trainer_dataset = trainer_dataset.padded_batch(
-    6,
+    36,
     padded_shapes=(
         ([None], [None]),  # inputs: (encoder, decoder)
         [None],  # labels
