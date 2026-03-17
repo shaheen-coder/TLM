@@ -1,11 +1,13 @@
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Embedding, LSTM, Dropout
+from tensorflow.keras.saving import register_keras_serializable
 import tensorflow as tf
 
 # custom imoprt
 from model.config import ModelConfig
 
 
+@register_keras_serializable(package="tinylm")
 class TinyLM(Model):
     def __init__(self, config: ModelConfig) -> None:
         super().__init__()

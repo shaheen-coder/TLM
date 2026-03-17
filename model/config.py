@@ -1,6 +1,8 @@
+from tensorflow.keras.saving import register_keras_serializable
 from dataclasses import dataclass
 
 
+@register_keras_serializable(package="tinylm")
 @dataclass(frozen=True)
 class ModelConfig:
     vocab_size: int = 15000
