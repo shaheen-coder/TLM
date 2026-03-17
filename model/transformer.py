@@ -1,6 +1,10 @@
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Embedding, LSTM, Dropout
-from tensorflow.keras.saving import register_keras_serializable
+from tensorflow.keras.saving import (
+    register_keras_serializable,
+    serialize_keras_object,
+    deserialize_keras_object,
+)
 import tensorflow as tf
 
 # custom imoprt
@@ -9,8 +13,8 @@ from model.config import ModelConfig
 
 @register_keras_serializable(package="tinylm")
 class TinyLM(Model):
-    def __init__(self, config: ModelConfig) -> None:
-        super().__init__()
+    def __init__(self, config: ModelConfig, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.config = config
         # shared embedding
         self.embedding = Embedding(
@@ -47,18 +51,15 @@ class TinyLM(Model):
         )
 
     def get_config(self):
-        return {
-            "config": {
-                "vocab_size": self.config.vocab_size,
-                "d_model": self.config.d_model,
-                "dropout": self.config.dropout,
-            }
-        }
+        config = super().get_config()
+        config.update({"config": serialize_keras_object(self.config)})
+        return config
 
     @classmethod
     def from_config(cls, config):
-        cfg = ModelConfig(**config["config"])
-        return cls(cfg)
+        config_dict = config.pop("config")
+        model_config = deserialize_keras_object(config_dict)
+        return cls(config=model_config, **config)
 
     def encoder(
         self, encoder_input: tf.Tensor, training: bool = False

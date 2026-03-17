@@ -74,6 +74,6 @@ model.compile(
     metrics=masked_accuracy,
 )
 
-model.fit(trainer_dataset, epochs=2)
+model.fit(trainer_dataset, epochs=5)
 
 model.save("tlm.keras")

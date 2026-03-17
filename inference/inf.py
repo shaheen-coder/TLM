@@ -14,7 +14,7 @@ class TinyLMInference:
         self.tokenizer = self._load_tokenizer()
 
     def _load_tokenizer(self) -> PreTrainedTokenizerFast:
-        tokenizer = Tokenizer.from_file("tokenizers/tiny_lm_tokenizer.json")
+        tokenizer = Tokenizer.from_file("tokenizer/tiny_lm_tokenizer.json")
         return PreTrainedTokenizerFast(
             tokenizer_object=tokenizer, pad_token="[PAD]", unk_token="[UNK]"
         )
@@ -117,8 +117,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-len", type=int, default=50)
     args = parser.parse_args()
 
-    model = load_model(args.model_path)
-    raw_tok = Tokenizer.from_file("tokenizers/tiny_lm_tokenizer.json")
+    model = load_model(args.model_path, compile=False)
+    raw_tok = Tokenizer.from_file("tokenizer/tiny_lm_tokenizer.json")
     bos_id = raw_tok.token_to_id("[AI]")
     eos_id = raw_tok.token_to_id("[END]")
 

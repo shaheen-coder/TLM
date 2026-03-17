@@ -10,6 +10,15 @@ class ModelConfig:
     lstm: int = 512
     dropout: float = 0.0
 
+    def get_config(self):
+        import dataclasses
+
+        return dataclasses.asdict(self)
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 @dataclass(frozen=True)
 class TrainerConfig:
