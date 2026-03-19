@@ -3,6 +3,7 @@ from transformers import PreTrainedTokenizerFast
 from tokenizers import Tokenizer
 import tensorflow as tf
 from tensorflow.keras.models import load_model
+from model.transformer import TinyLM
 
 
 class TinyLMInference:

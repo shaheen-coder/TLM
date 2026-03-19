@@ -1,12 +1,22 @@
+import numpy as np
 import tensorflow as tf
-from tensorflow.data import Dataset
 
 from model.transformer import TinyLM
-from train.preprocess import PreTokens
 from model.config import ModelConfig
 
-trainer_dataset = Dataset.load("datasets/tiny_lm_dataset")
+encoder_arr = np.load("datasets/encoder.npy")
+decoder_in_arr = np.load("datasets/decoder_in.npy")
+decoder_out_arr = np.load("datasets/decoder_out.npy")
 
+dataset = tf.data.Dataset.from_tensor_slices(
+    ((encoder_arr, decoder_in_arr), decoder_out_arr)
+)
+dataset = (
+    dataset.shuffle(10000)
+    .batch(36, drop_remainder=True)
+    .cache()  # important
+    .prefetch(tf.data.AUTOTUNE)
+)
 config = ModelConfig()
 
 model = TinyLM(config)
@@ -42,9 +52,9 @@ def masked_accuracy(y_true, y_pred):
 model.compile(
     optimizer=tf.keras.optimizers.Adam(1e-4),
     loss=masked_pad_loss,
-    metrics=masked_accuracy,
+    metrics=[masked_accuracy],
 )
 
-model.fit(trainer_dataset, epochs=5)
+model.fit(dataset, epochs=5)
 
 model.save("tlm.keras")

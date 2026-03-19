@@ -1,41 +1,26 @@
+import numpy as np
 from tensorflow.data import Dataset
 import tensorflow as tf
-from preprocess import PreTokens
+from train.preprocess import PreTokens
 
 
 dataset = PreTokens("datasets/", "tokenizer/tiny_lm_tokenizer.json")
 
 
-def data_generator():
-    for encoder_ids, decoder_ids in dataset.get_tokens():
-        yield (encoder_ids, decoder_ids[:-1]), decoder_ids[1:]
+encoder_list = []
+decoder_in_list = []
+decoder_out_list = []
+
+for enc, dec in dataset.get_tokens():
+    encoder_list.append(enc)
+    decoder_in_list.append(dec[:-1])
+    decoder_out_list.append(dec[1:])
 
 
-trainer_dataset = Dataset.from_generator(
-    data_generator,
-    output_signature=(
-        (
-            tf.TensorSpec(shape=(None,), dtype=tf.int32),  # encoder_input
-            tf.TensorSpec(shape=(None,), dtype=tf.int32),  # decoder_input
-        ),
-        tf.TensorSpec(shape=(None,), dtype=tf.int32),  # labels
-    ),
-)
+encoder_arr = np.array([x for x in encoder_list], dtype=np.int32)
+decoder_in_arr = np.array([x for x in decoder_in_list], dtype=np.int32)
+decoder_out_arr = np.array([x for x in decoder_out_list], dtype=np.int32)
 
-trainer_dataset = (
-    trainer_dataset.padded_batch(
-        batch_size=36,
-        padded_shapes=(
-            ([None], [None]),  # inputs: (encoder, decoder)
-            [None],  # labels
-        ),
-        padding_values=(
-            (tf.constant(0, dtype=tf.int32), tf.constant(0, dtype=tf.int32)),
-            tf.constant(0, dtype=tf.int32),
-        ),
-    )
-    .shuffle(10000)
-    .prefetch(tf.data.AUTOTUNE)
-)
-
-trainer_dataset.save("datasets/tiny_lm_dataset")
+np.save("datasets/encoder.npy", encoder_arr)
+np.save("datasets/decoder_in.npy", decoder_in_arr)
+np.save("datasets/decoder_out.npy", decoder_out_arr)
