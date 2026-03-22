@@ -67,6 +67,7 @@ class TinyLMInference:
         topp: float = None,
     ) -> str:
 
+        input_text = f"[PROMPT] {input_text}"
         input_ids = self.tokenizer(input_text)["input_ids"]
         encoder_input = tf.constant([input_ids])
         states = self.model.encoder(encoder_input, training=False)
