@@ -4,18 +4,15 @@ import tensorflow as tf
 from model.transformer import TinyLM
 from model.config import ModelConfig
 
-encoder_arr = np.load("datasets/encoder.npy")
-decoder_in_arr = np.load("datasets/decoder_in.npy")
-decoder_out_arr = np.load("datasets/decoder_out.npy")
+encoder_arr = np.load("datasets/encoder.npy", mmap_mode="r")
+decoder_in_arr = np.load("datasets/decoder_in.npy", mmap_mode="r")
+decoder_out_arr = np.load("datasets/decoder_out.npy", mmap_mode="r")
 
 dataset = tf.data.Dataset.from_tensor_slices(
     ((encoder_arr, decoder_in_arr), decoder_out_arr)
 )
 dataset = (
-    dataset.shuffle(10000)
-    .batch(36, drop_remainder=True)
-    .cache()  # important
-    .prefetch(tf.data.AUTOTUNE)
+    dataset.shuffle(10000).batch(64, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
 )
 config = ModelConfig()
 
