@@ -1,6 +1,4 @@
 import numpy as np
-from tensorflow.data import Dataset
-import tensorflow as tf
 from train.preprocess import PreTokens
 
 

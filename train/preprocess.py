@@ -48,21 +48,21 @@ class PreTokens:
         prompt_text = f"[PROMPT] {prompt}"
         response_text = f"[AI] {response}[END]"
 
-        prompt_ids = self.tokenizer(prompt_text)["input_ids"]
-
-        remaining = 45 - len(prompt_ids)  # 45 is tokens max length
-        if remaining <= 0:
-            raise ValueError("Prompt too long for max_length")
-
-        response_ids = self.tokenizer(
-            response_text,
-            max_length=remaining,
+        # Prompt → fixed 20 tokens
+        prompt_ids = self.tokenizer(
+            prompt_text,
+            max_length=20,
             padding="max_length",
             truncation=True,
         )["input_ids"]
 
-        if len(prompt_ids) + len(response_ids) > 45:  # 45 max tokens
-            raise ValueError("Combined tokens exceed max_length")
+        # Response → fixed 50 tokens
+        response_ids = self.tokenizer(
+            response_text,
+            max_length=50,
+            padding="max_length",
+            truncation=True,
+        )["input_ids"]
 
         return prompt_ids, response_ids
 
