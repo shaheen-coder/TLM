@@ -5,9 +5,9 @@ from dataclasses import dataclass
 @register_keras_serializable(package="tinylm")
 @dataclass(frozen=True)
 class ModelConfig:
-    vocab_size: int = 15000
-    d_model: int = 512
-    lstm: int = 512
+    vocab_size: int = 8687
+    d_model: int = 256
+    lstm: int = 256
     dropout: float = 0.0
 
     def get_config(self):
