@@ -1,18 +1,16 @@
 from tokenizers import Tokenizer
-from tokenizers.models import BPE
+from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
-from tokenizers.trainers import BpeTrainer
+from tokenizers.trainers import WordLevelTrainer
 from pathlib import Path
 
 
 files_lst = [str(p) for p in Path("datasets").glob("*.csv")]
-tokenizer = Tokenizer(BPE())
+tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
 
 tokenizer.pre_tokenizer = Whitespace()
 
-trainer = BpeTrainer(
-    vocab_size=15000,
-    min_frequency=1,
+trainer = WordLevelTrainer(
     special_tokens=["[PAD]", "[END]", "[PROMPT]", "[AI]", "[SEP]", "[START]", "[UNK]"],
 )
 
