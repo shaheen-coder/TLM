@@ -82,9 +82,9 @@ class TinyLM(Model):
         out, h, c = self.decoder_lstm(
             y, mask=mask, initial_state=states, training=training
         )
-        out *= tf.math.sqrt(
-            tf.cast(self.config.d_model, tf.float32)
-        )  # scale by sqrt of 512
+        # out *= tf.math.sqrt(
+        #    tf.cast(self.config.d_model, tf.float32)
+        # )  # scale by sqrt of 512
         logits = out @ tf.transpose(self.embedding.embeddings) + self.logits_bias
 
         return logits, [h, c]
