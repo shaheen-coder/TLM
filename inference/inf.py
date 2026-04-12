@@ -70,14 +70,16 @@ class TinyLMInference:
         input_text = f"[PROMPT] {input_text}"
         input_ids = self.tokenizer(input_text)["input_ids"]
         encoder_input = tf.constant([input_ids])
-        states = self.model.encoder(encoder_input, training=False)
+        encoder_outputs, states = self.model.encoder(encoder_input, training=False)
 
         decoder_input = tf.constant([[self.bos_id]])
 
         generated = []
 
         for _ in range(self.max_len):
-            logits, states = self.model.decoder(decoder_input, states, training=False)
+            logits, states = self.model.decoder(
+                encoder_outputs, decoder_input, states, training=False
+            )
 
             next_tok_log = logits[:, -1, :]
 
