@@ -1,8 +1,21 @@
+import os
+from datetime import datetime
 import numpy as np
 import tensorflow as tf
 
 from model.transformer import TinyLM
 from model.config import ModelConfig
+
+# tensorboard
+
+log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
+
+tb_cb = tf.keras.callbacks.TensorBoard(
+    log_dir=log_dir,
+    histogram_freq=0,
+    write_graph=False,
+    update_freq="epoch",
+)
 
 encoder_arr = np.load("datasets/encoder.npy", mmap_mode="r")
 decoder_in_arr = np.load("datasets/decoder_in.npy", mmap_mode="r")
@@ -23,9 +36,8 @@ val_dataset = tf.data.Dataset.from_tensor_slices(
     ((val_encoder_arr, val_decoder_in_arr), val_decoder_out_arr)
 )
 
-val_dataset = val_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
+val_dataset = val_dataset.batch(50).prefetch(tf.data.AUTOTUNE)
 
-val_dataset = val_dataset.take(2)
 
 config = ModelConfig()
 
@@ -65,6 +77,11 @@ model.compile(
     metrics=[masked_accuracy],
 )
 
-model.fit(dataset, validation_data=val_dataset, epochs=100)
+model.fit(
+    dataset,
+    validation_data=val_dataset,
+    epochs=100,
+    callbacks=[tb_cb],
+)
 
 model.save("tlm.keras")
