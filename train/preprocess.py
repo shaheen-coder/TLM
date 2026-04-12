@@ -11,6 +11,7 @@ class PreTokens:
     ) -> None:
 
         self.dir_path = Path(dir_name)
+        self.val_dir_path = self.dir_path / "val/"
         self.tokenizer_path = Path(tokenizer_file)
         self._validate_paths()
         self.tokenizer = self._load_tokenizer()
@@ -28,11 +29,15 @@ class PreTokens:
             tokenizer_object=tokenize, pad_token="[PAD]", unk_token="[UNK]"
         )
 
-    def _list_csv_files(self) -> List[Path]:
-
-        files = list(self.dir_path.glob("*.csv"))
+    def _list_csv_files(self, mode: str = "t") -> List[Path]:
+        files = (
+            list(self.dir_path.glob("*.csv"))
+            if mode == "t"
+            else list(self.val_dir_path.glob("*.csv"))
+        )
+        search_path = self.dir_path if mode == "t" else self.val_dir_path
         if not files:
-            raise FileNotFoundError(f"No csv files found in `{self.dir_path}`")
+            raise FileNotFoundError(f"No csv files found in `{search_path}`")
 
         return files
 
@@ -66,8 +71,8 @@ class PreTokens:
 
         return prompt_ids, response_ids
 
-    def get_tokens(self):
-        for file_path in self._list_csv_files():
+    def get_tokens(self, mode: str = "t"):
+        for file_path in self._list_csv_files(mode=mode):
             for row in self._read_csv(file_path):
                 try:
                     prompt_ids, response_ids = self._encode_tokens(

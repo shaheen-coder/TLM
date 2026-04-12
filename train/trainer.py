@@ -14,6 +14,19 @@ dataset = tf.data.Dataset.from_tensor_slices(
 dataset = (
     dataset.shuffle(10000).batch(64, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
 )
+# validation
+val_encoder_arr = np.load("datasets/val_encoder.npy", mmap_mode="r")
+val_decoder_in_arr = np.load("datasets/val_decoder_in.npy", mmap_mode="r")
+val_decoder_out_arr = np.load("datasets/val_decoder_out.npy", mmap_mode="r")
+
+val_dataset = tf.data.Dataset.from_tensor_slices(
+    ((val_encoder_arr, val_decoder_in_arr), val_decoder_out_arr)
+)
+
+val_dataset = val_dataset.batch(64).prefetch(tf.data.AUTOTUNE)
+
+val_dataset = val_dataset.take(2)
+
 config = ModelConfig()
 
 model = TinyLM(config)
@@ -52,6 +65,6 @@ model.compile(
     metrics=[masked_accuracy],
 )
 
-model.fit(dataset, epochs=100)
+model.fit(dataset, validation_data=val_dataset, epochs=100)
 
 model.save("tlm.keras")
