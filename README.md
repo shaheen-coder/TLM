@@ -1,198 +1,93 @@
-🧠 TinyLM Failure Analysis (Research Report)
+# 🧠 TinyLM Failure Analysis: A Research Report
 
-📌 Overview
-
-This project implements a small-scale language model (TinyLM) using an LSTM-based encoder-decoder architecture with Luong-style attention.
-The model was trained on a relatively small dataset (~460K tokens) for conversational text generation.
-
-Despite achieving decreasing training loss and moderate training accuracy, the model fails to generalize during inference and produces low-quality, repetitive, and incoherent outputs.
-
-This document provides a complete technical analysis of:
-
-- Architecture
-- Training behavior
-- Loss curves
-- Inference outputs
-- Root causes of failure
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Failed_Research-red?style=for-the-badge" alt="Status">
+  <img src="https://img.shields.io/badge/Architecture-LSTM--Attention-blue?style=for-the-badge" alt="Arch">
+  <img src="https://img.shields.io/badge/Framework-TensorFlow/Keras-orange?style=for-the-badge" alt="Framework">
+</p>
 
 ---
 
-🏗️ Architecture
+## 📌 Project Overview
 
-Model Design
+This project implements **TinyLM**, a small-scale language model utilizing an **LSTM-based encoder-decoder architecture** with **Luong-style attention**. Despite standard training procedures on ~460K tokens, the model serves as a "successful failure" case study—achieving low training loss but failing to generalize during inference.
 
-Input → Embedding → Encoder LSTM → Decoder LSTM → Attention → Projection → Output logits
-
-Components
-
-- Shared Embedding
-  
-  - "vocab_size = 10840"
-  - "d_model = 256"
-
-- Encoder
-  
-  - LSTM (returns sequences + states)
-
-- Decoder
-  
-  - LSTM initialized with encoder states
-
-- Attention
-  
-  - Luong-style dot-product attention ("tf.keras.layers.Attention")
-
-- Output Layer
-  
-  - Weight tying with embedding matrix
-  - Learned bias
+> [!CAUTION]
+> **Key Finding:** Low training loss and high training accuracy (50%) do not guarantee a functional language model. This project highlights the gap between metric optimization and semantic understanding.
 
 ---
 
-📊 Training Summary
+## 🏗️ Architecture Design
 
-Dataset
+The model follows a classic sequence-to-sequence flow with shared weights for efficiency.
 
-- Total tokens: ~460,000
-- Vocabulary size: 10,840
-- Validation : ~10%
-
----
-
-Training Metrics
-
-Metric| Final Value
-Train Loss| ~2.96
-Validation Loss| ~9.55
-Train Accuracy| ~50%
-Validation Accuracy| ~11%
+| Component | Specification |
+| :--- | :--- |
+| **Input Pipeline** | Embedding (256-dim) → Encoder LSTM |
+| **Attention** | Luong-style Dot-Product (`tf.keras.layers.Attention`) |
+| **Output** | Dense Layer with **Weight Tying** to Embedding |
+| **Vocab Size** | 10,840 tokens |
 
 ---
 
-📉 Loss Behavior
+## 📊 Training Performance
 
-Key Pattern
+The divergence between training and validation metrics indicates a classic case of **severe overfitting**.
 
-- Training loss decreases steadily
-- Validation loss increases continuously
+### Metrics at a Glance
+| Metric | Training | Validation |
+| :--- | :--- | :--- |
+| **Loss** | `2.96` | `9.55` |
+| **Accuracy** | `50.1%` | `11.2%` |
 
-This indicates:
+### 📉 Loss Behavior
+The training loss decreases steadily while validation loss increases, showing that the model is **memorizing noise** rather than learning linguistic patterns.
 
-«⚠️ Severe overfitting»
-
----
-
-📈 Training Loss Graph
-
-"Training vs Validation Loss"
-![losses] (docs/traning.jpg)
-
-Interpretation
-
-- Early epochs: validation loss < training loss
-- Later epochs: divergence increases sharply
-
-👉 Model memorizes training data instead of learning general patterns
+<p align="center">
+  <img src="docs/traning.jpg" width="80%" alt="Training vs Validation Loss">
+  <br>
+  <em>Figure 1: Sharp divergence in validation loss vs. training epochs.</em>
+</p>
 
 ---
 
-🔬 Evalution Analysis
+## 🤖 Inference Case Studies
 
-Evaluation Losses
+Inference results reveal that the model relies on "safe" repetitive phrases and fails to maintain grammatical coherence.
 
-![eval loss] (docs/eval_loss.jpg)
+### 1. Greedy Decoding
+* **Prompt:** `hello shaAI`
+* **Response:** `actually , enna , naan oru seyya poreenga .`
 
-Observations
+### 2. Top-k Sampling
+* **Prompt:** `vanakkam shaAI, epdi irukka?`
+* **Response:** `naan vachirundha nalla irukken . but usually irukkinga la irukku !`
 
-- Poor clustering of semantically related tokens
-- No meaningful structure in embedding space
-- High overlap between unrelated tokens
-
-👉 Indicates weak semantic learning
-
----
-
-🤖 Inference Results
-
-Greedy Decoding
-
-Prompt  : hello shaAI
-Response: actually , enna , naan oru seyya poreenga .
-
-Prompt  : hi shaAI, good morning
-Response: actually , naan oru nalla irukken . but naan layers la irukken .
+> [!WARNING]
+> **Identified Issues:** Broken grammar, weak prompt conditioning, and over-reliance on common tokens like "actually" or "naan oru".
 
 ---
 
-Top-k Sampling
+## 🔬 Root Cause Analysis
 
-Prompt  : vanakkam shaAI, epdi irukka?
-Response: naan vachirundha nalla irukken . but usually irukkinga la irukku !
-
----
-
-Observed Issues
-
-- Repetitive phrases: ""actually", "naan oru""
-- Broken grammar
-- Weak prompt conditioning
-- Mixed and incoherent responses
+| Aspect | Observation |
+| :--- | :--- |
+| **Semantic Space** | Weak clustering; unrelated tokens show high overlap in embedding space. |
+| **Context** | The model captures local token transitions but fails at global context understanding. |
+| **Data Scale** | 460K tokens proved insufficient for the complexity of the LSTM-Attention architecture. |
 
 ---
 
+## 📎 Future Directions
 
-🧠 Key Insight
-
-«✅ Low loss ≠ good language model
-❌ High accuracy ≠ understanding»
-
-The model learns:
-
-- Token-level transitions
-
-But fails at:
-
-- Context understanding
-- Coherent generation
+- [ ] **Shift to Decoder-Only:** Transition to a GPT-style (Transformer) architecture.
+- [ ] **Attention Mapping:** Visualize weight distribution to identify "blind spots."
+- [ ] **Data Augmentation:** Scale the dataset significantly to improve generalization.
+- [ ] **Similarity Analysis:** Use Cosine Distance to evaluate embedding quality post-training.
 
 ---
 
-🔄 Failure Pattern Summary
-
-Aspect| Behavior
-Training| Successful
-Validation| Diverges
-Inference| Poor quality
-Generalization| Failed
-
----
-
-📌 Conclusion
-
-TinyLM demonstrates a classic failure case where:
-
-- Training appears successful
-- Metrics look reasonable
-- But inference quality is poor
-
-This highlights the importance of:
-
-- Matching architecture to task
-- Using sufficient data
-- Evaluating beyond training metrics
-
----
-
-📎 Future Work
-
-- Implement GPT-style decoder-only model
-- Visualize attention weights
-- Analyze embedding similarity using cosine distance
-- Scale dataset and compare performance
-
----
-
-Author:
-Shaheen ( @shaheen-coder ) (ML Engineer)
+### Author
+**Shaheen** *Machine Learning Engineer* [![GitHub](https://img.shields.io/badge/GitHub-shaheen--coder-181717?style=flat&logo=github)](https://github.com/shaheen-coder)
 
 ---
