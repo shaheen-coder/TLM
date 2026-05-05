@@ -14,39 +14,35 @@ class TinyLMInference:
         self.max_len = max_len
         self.tokenizer = self._load_tokenizer()
 
-    def _load_tokenizer(self) -> PreTrainedTokenizerFast:
+    def _load_tokenizer(self):
         tokenizer = Tokenizer.from_file("tokenizer/tiny_lm_tokenizer.json")
         return PreTrainedTokenizerFast(
-            tokenizer_object=tokenizer, pad_token="[PAD]", unk_token="[UNK]"
+            tokenizer_object=tokenizer,
+            pad_token="[PAD]",
+            unk_token="[UNK]",
         )
 
-    def _greedy_sampling(self, logits):
-        tok_id = int(tf.argmax(logits, axis=-1).numpy()[0])
-        return tok_id
-
     def _top_sampling(self, logits, topk=None, topp=None):
-        logits = tf.squeeze(logits, axis=0)  # [vocab_size]
+        logits = tf.squeeze(logits, axis=0)
 
-        # --- Top-K filtering ---
         if topk is not None and topk > 0:
-            # Find the kth largest value as a threshold
             values, _ = tf.math.top_k(logits, k=topk)
-            min_top_k_val = values[-1]  # smallest value among top-k
-            # Zero out (mask) anything below the top-k threshold
+            min_top_k_val = values[-1]
             mask = logits < min_top_k_val
             logits = tf.where(mask, tf.fill(tf.shape(logits), float("-inf")), logits)
 
-        # --- Top-P (nucleus) filtering ---
         if topp is not None and 0.0 < topp < 1.0:
             sorted_indices = tf.argsort(logits, direction="DESCENDING")
             sorted_logits = tf.gather(logits, sorted_indices)
 
-            sorted_probs = tf.nn.softmax(sorted_logits)
-            cumulative_probs = tf.cumsum(sorted_probs, exclusive=False)
+            probs = tf.nn.softmax(sorted_logits)
+            cumulative_probs = tf.cumsum(probs)
 
-            sorted_mask = cumulative_probs - sorted_probs > topp
+            mask = cumulative_probs > topp
+            mask = tf.concat([[False], mask[:-1]], axis=0)
+
             sorted_logits = tf.where(
-                sorted_mask,
+                mask,
                 tf.fill(tf.shape(sorted_logits), float("-inf")),
                 sorted_logits,
             )
@@ -55,59 +51,51 @@ class TinyLMInference:
             logits = tf.gather(sorted_logits, original_order)
 
         logits = tf.expand_dims(logits, axis=0)
-        tok_id = int(tf.squeeze(tf.random.categorical(logits, num_samples=1)).numpy())
+        tok_id = int(tf.squeeze(tf.random.categorical(logits, 1)).numpy())
         return tok_id
 
     def generate(
         self,
         input_text: str,
-        samp_mode: str = "greedy",
-        temp: float = 1.0,
-        topk: int = None,
-        topp: float = None,
-    ) -> str:
-
-        input_text = f"[PROMPT] {input_text}"
+        samp_mode="greedy",
+        temp=1.0,
+        topk=None,
+        topp=None,
+    ):
+        # ---- Tokenize ----
+        input_text = f"[PROMPT] {input_text} [AI]"
         input_ids = self.tokenizer(input_text)["input_ids"]
-        encoder_input = tf.constant([input_ids])
-        encoder_outputs, states = self.model.encoder(encoder_input, training=False)
 
-        decoder_input = tf.constant([[self.bos_id]])
-
-        generated = []
+        # Start sequence with prompt
+        generated = input_ids.copy()
 
         for _ in range(self.max_len):
-            logits, states = self.model.decoder(
-                encoder_outputs, decoder_input, states, training=False
-            )
+            # ---- Model forward ----
+            inputs = tf.constant([generated])
+            logits = self.model(inputs, training=False)
 
-            next_tok_log = logits[:, -1, :]
+            next_tok_logits = logits[:, -1, :] / temp
 
+            # ---- Sampling ----
             if samp_mode == "greedy":
-                next_tok = tf.argmax(next_tok_log, axis=-1)
-                tok_id = int(next_tok.numpy()[0])
-
-                if tok_id == self.eos_id:
-                    break
-
-                generated.append(tok_id)
-                decoder_input = tf.expand_dims(
-                    tf.cast(next_tok, dtype=tf.int32), axis=1
-                )  # [1, 1]
+                tok_id = int(tf.argmax(next_tok_logits, axis=-1).numpy()[0])
 
             elif samp_mode == "top":
-                scaled_logits = next_tok_log / temp
+                tok_id = self._top_sampling(next_tok_logits, topk=topk, topp=topp)
 
-                tok_id = self._top_sampling(scaled_logits, topk=topk, topp=topp)
+            else:
+                raise ValueError("Unknown sampling mode")
 
-                if tok_id == self.eos_id:
-                    break
+            # ---- Stop condition ----
+            if tok_id == self.eos_id:
+                break
 
-                generated.append(tok_id)
-                decoder_input = tf.constant([[tok_id]])
+            generated.append(tok_id)
 
-        text = self.tokenizer.decode(generated)
-        return text
+        # Remove prompt tokens before decoding (optional)
+        output_tokens = generated[len(input_ids) :]
+
+        return self.tokenizer.decode(output_tokens)
 
 
 if __name__ == "__main__":
