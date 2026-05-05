@@ -77,20 +77,15 @@ class TinyLM(Model):
 
     # -------- Mask -------- #
     def _causal_mask(self, x):
-        batch_size = tf.shape(x)[0]
         seq_len = tf.shape(x)[1]
-
-        # padding mask
         padding_mask = self.embedding.compute_mask(x)
         padding_mask = tf.cast(padding_mask, tf.bool)
-        padding_mask = padding_mask[:, tf.newaxis, tf.newaxis, :]
+        causal_mask = tf.linalg.band_part(
+            tf.ones((seq_len, seq_len), dtype=tf.bool), -1, 0
+        )
 
-        # causal mask
-        causal = tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
-        causal = tf.cast(causal, tf.bool)
-        causal = causal[tf.newaxis, tf.newaxis, :, :]
-
-        return tf.logical_and(padding_mask, causal)
+        mask = padding_mask[:, tf.newaxis, :] & causal_mask[tf.newaxis, :, :]
+        return mask
 
     # -------- Forward -------- #
     def call(self, inputs, training=False):

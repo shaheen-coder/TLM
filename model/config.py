@@ -6,9 +6,12 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class ModelConfig:
     vocab_size: int = 10840
-    d_model: int = 256
-    lstm: int = 256
-    dropout: float = 0.0
+    d_model: int = 128
+    num_heads: int = 4
+    dff: int = 256
+    dropout: float = 0.03
+    recurrent_dropout: float = 0.1
+    num_layers: int = 2
 
     def get_config(self):
         import dataclasses
@@ -18,8 +21,3 @@ class ModelConfig:
     @classmethod
     def from_config(cls, config):
         return cls(**config)
-
-
-@dataclass(frozen=True)
-class TrainerConfig:
-    max_seq: int = 45
