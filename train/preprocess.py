@@ -49,36 +49,26 @@ class PreTokens:
             for row in reader:
                 yield row
 
-    def _encode_tokens(self, prompt: str, response: str) -> Tuple[List[int], List[int]]:
+    def _encode_tokens(self, prompt: str, response: str) -> List[int]:
         prompt_text = f"[PROMPT] {prompt}"
-        response_text = f"[AI] {response}[END]"
+        input_text = f"{prompt_text} [AI] {response}[END]"
 
-        # Prompt → fixed 20 tokens
+        # Prompt → fixed 50 tokens
         prompt_ids = self.tokenizer(
-            prompt_text,
-            max_length=20,
+            input_text,
+            max_length=55,
             padding="max_length",
             truncation=True,
         )["input_ids"]
 
-        # Response → fixed 50 tokens
-        response_ids = self.tokenizer(
-            response_text,
-            max_length=50,
-            padding="max_length",
-            truncation=True,
-        )["input_ids"]
-
-        return prompt_ids, response_ids
+        return prompt_ids
 
     def get_tokens(self, mode: str = "t"):
         for file_path in self._list_csv_files(mode=mode):
             for row in self._read_csv(file_path):
                 try:
-                    prompt_ids, response_ids = self._encode_tokens(
-                        row["prompt"], row["response"]
-                    )
+                    prompt_ids = self._encode_tokens(row["prompt"], row["response"])
 
-                    yield prompt_ids, response_ids
+                    yield prompt_ids
                 except ValueError:
                     continue

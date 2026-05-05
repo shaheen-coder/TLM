@@ -1,5 +1,12 @@
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Attention
+from tensorflow.keras.layers import (
+    Embedding,
+    Dense,
+    MultiHeadAttention,
+    Add,
+    LayerNormalization,
+    Dropout,
+)
 from tensorflow.keras.saving import (
     register_keras_serializable,
     serialize_keras_object,
@@ -10,49 +17,45 @@ import tensorflow as tf
 # custom imoprt
 from model.config import ModelConfig
 
-from typing import Tuple
-
 
 @register_keras_serializable(package="tinylm")
 class TinyLM(Model):
     def __init__(self, config: ModelConfig, **kwargs) -> None:
         super().__init__(**kwargs)
         self.config = config
-        # shared embedding
+        # ---- Embedding ----
         self.embedding = Embedding(
             input_dim=config.vocab_size,
             output_dim=config.d_model,
             mask_zero=True,
-            embeddings_initializer="glorot_uniform",
-            name="shared_embedding",
-        )
-        # -------------  encoder -------------
-        self.encoder_lstm = LSTM(
-            units=config.d_model,
-            return_state=True,
-            return_sequences=True,
-            dropout=config.dropout,
-            name="encoder_lstm",
-        )
-        # ------------- Decoder -------------
-        self.decoder_lstm = LSTM(
-            units=config.d_model,
-            return_state=True,
-            return_sequences=True,
-            dropout=config.dropout,
-            name="decoder_lstm",
-        )
-        # --------------- Attention --------
-        self.attention = Attention(
-            use_scale=False,
-            name="luong_attention",
-        )
-        # -------------- Attention proj ----
-        self.atn_proj = Dense(
-            units=config.d_model, activation="tanh", name="attn_projection"
+            name="token_embedding",
         )
 
-        # ------------- FF -------------
+        self.dropout = Dropout(config.dropout)
+
+        # ---- Self Attention ----
+        self.attention = MultiHeadAttention(
+            num_heads=config.num_heads,
+            key_dim=config.d_model // config.num_heads,
+            dropout=config.dropout,
+            name="self_attention",
+        )
+
+        self.add1 = Add()
+        self.norm1 = LayerNormalization(epsilon=1e-6)
+
+        # ---- Feed Forward ----
+        self.ffn = tf.keras.Sequential(
+            [
+                Dense(config.dff, activation="relu"),
+                Dense(config.d_model),
+            ]
+        )
+
+        self.add2 = Add()
+        self.norm2 = LayerNormalization(epsilon=1e-6)
+
+        # ---- LM head bias ----
         self.logits_bias = self.add_weight(
             shape=(config.vocab_size,),
             initializer="zeros",
@@ -60,6 +63,7 @@ class TinyLM(Model):
             name="logits_bias",
         )
 
+    # -------- Serialization -------- #
     def get_config(self):
         config = super().get_config()
         config.update({"config": serialize_keras_object(self.config)})
@@ -71,50 +75,48 @@ class TinyLM(Model):
         model_config = deserialize_keras_object(config_dict)
         return cls(config=model_config, **config)
 
-    def encoder(
-        self, encoder_input: tf.Tensor, training: bool = False
-    ) -> Tuple[tf.Tensor, list[tf.Tensor]]:
-        x = self.embedding(encoder_input)
+    # -------- Mask -------- #
+    def _causal_mask(self, x):
+        batch_size = tf.shape(x)[0]
+        seq_len = tf.shape(x)[1]
 
-        mask = self.embedding.compute_mask(encoder_input)
+        # padding mask
+        padding_mask = self.embedding.compute_mask(x)
+        padding_mask = tf.cast(padding_mask, tf.bool)
+        padding_mask = padding_mask[:, tf.newaxis, tf.newaxis, :]
 
-        encoder_outputs, h, c = self.encoder_lstm(x, mask=mask, training=training)
+        # causal mask
+        causal = tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
+        causal = tf.cast(causal, tf.bool)
+        causal = causal[tf.newaxis, tf.newaxis, :, :]
 
-        return encoder_outputs, [h, c]
+        return tf.logical_and(padding_mask, causal)
 
-    def decoder(
-        self,
-        encoder_outputs: tf.Tensor,
-        decoder_inputs: tf.Tensor,
-        states,
-        training: bool = False,
-    ):
-        y = self.embedding(decoder_inputs)
+    # -------- Forward -------- #
+    def call(self, inputs, training=False):
+        x = self.embedding(inputs)
+        x = self.dropout(x, training=training)
 
-        mask = self.embedding.compute_mask(decoder_inputs)
+        mask = self._causal_mask(inputs)
 
-        out, h, c = self.decoder_lstm(
-            y, mask=mask, initial_state=states, training=training
+        # ---- Self Attention ----
+        attn_out = self.attention(
+            query=x,
+            key=x,
+            value=x,
+            attention_mask=mask,
+            training=training,
         )
-        context = self.attention([out, encoder_outputs], training=training)
-        combined = tf.concat([context, out], axis=-1)
-        attn_hidden = self.atn_proj(combined)
+        x = self.add1([x, attn_out])
+        x = self.norm1(x)
 
-        logits = (
-            attn_hidden @ tf.transpose(self.embedding.embeddings) + self.logits_bias
-        )
+        # ---- FFN ----
+        ffn_out = self.ffn(x, training=training)
+        x = self.add2([x, ffn_out])
+        x = self.norm2(x)
 
-        return logits, [h, c]
-
-    def call(self, inputs: tf.Tensor, training: bool = False) -> tf.Tensor:
-
-        encoder_input = inputs[0]
-        decoder_input = inputs[1]
-        # ------------- Encoder Part -------------
-        encoder_outputs, encoder_state = self.encoder(encoder_input, training=training)
-        # ------------- Decoder Part -------------
-        logits, _ = self.decoder(
-            encoder_outputs, decoder_input, encoder_state, training=training
-        )
+        # ---- LM head (tied weights) ----
+        logits = tf.matmul(x, self.embedding.embeddings, transpose_b=True)
+        logits = logits + self.logits_bias
 
         return logits
