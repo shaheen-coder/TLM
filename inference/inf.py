@@ -1,4 +1,3 @@
-import argparse
 from transformers import PreTrainedTokenizerFast
 from tokenizers import Tokenizer
 import tensorflow as tf
@@ -120,9 +119,16 @@ if __name__ == "__main__":
         print(f"Response: {response}")
         print()
 
-    print("--------------------------- Top    -------------------------- ")
+    print("--------------------------- Top ( 0.7 )   -------------------------- ")
     for sample in samples:
         response = inferencer.generate(sample, "top", 0.7, 20, 0.9)
+        print(f"Prompt  : {sample}")
+        print(f"Response: {response}")
+        print()
+
+    print("--------------------------- Top ( 0.5 )   -------------------------- ")
+    for sample in samples:
+        response = inferencer.generate(sample, "top", 0.5, 20, 0.9)
         print(f"Prompt  : {sample}")
         print(f"Response: {response}")
         print()

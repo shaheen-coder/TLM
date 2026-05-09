@@ -11,8 +11,8 @@ BATCH_SIZE = 16
 log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
 tb_cb = tf.keras.callbacks.TensorBoard(
     log_dir=log_dir,
-    histogram_freq=0,
-    write_graph=False,
+    histogram_freq=1,
+    write_graph=True,
     update_freq="epoch",
 )
 
