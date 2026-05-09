@@ -12,6 +12,7 @@ from tensorflow.keras.saving import (
     serialize_keras_object,
     deserialize_keras_object,
 )
+from keras_hub.layers import RotaryEmbedding
 import tensorflow as tf
 
 # custom imoprt
@@ -29,6 +30,13 @@ class TinyLM(Model):
             output_dim=config.d_model,
             mask_zero=True,
             name="token_embedding",
+        )
+        # --------  ROPE -----------
+        self.rope = RotaryEmbedding(
+            max_wavelength=10000,
+            sequence_axis=1,
+            feature_axis=-1,
+            name="rope",
         )
 
         self.dropout = Dropout(config.dropout)
@@ -89,17 +97,20 @@ class TinyLM(Model):
 
     # -------- Forward -------- #
     def call(self, inputs, training=False):
-        x = self.embedding(inputs)
-        x = self.dropout(x, training=training)
 
-        mask = self._causal_mask(inputs)
+        x = self.embedding(inputs)
+
+        # apply rope
+        x = self.rope(x)
+
+        x = self.dropout(x, training=training)
 
         # ---- Self Attention ----
         attn_out = self.attention(
             query=x,
             key=x,
             value=x,
-            attention_mask=mask,
+            use_causal_mask=True,
             training=training,
         )
         x = self.add1([x, attn_out])
