@@ -9,7 +9,7 @@ class ModelConfig:
     d_model: int = 128
     num_heads: int = 4
     dff: int = 256
-    dropout: float = 0.03
+    dropout: float = 0.2
     recurrent_dropout: float = 0.1
     num_layers: int = 2
 

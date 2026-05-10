@@ -7,7 +7,7 @@ from model.transformer import TinyLM
 from model.config import ModelConfig
 
 # --- Configuration ---
-BATCH_SIZE = 16
+BATCH_SIZE = 12
 log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
 tb_cb = tf.keras.callbacks.TensorBoard(
     log_dir=log_dir,
@@ -58,7 +58,9 @@ def masked_accuracy(y_true, y_pred):
 config = ModelConfig()
 model = TinyLM(config)
 
-optimizer = tf.keras.optimizers.Adam(1e-3)
+optimizer = tf.keras.optimizers.AdamW(
+    learning_rate=1e-4, weight_decay=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-7
+)
 
 model.compile(
     optimizer=optimizer,
@@ -70,7 +72,7 @@ model.compile(
 model.fit(
     dataset,
     validation_data=val_dataset,
-    epochs=1,
+    epochs=5,
     callbacks=[tb_cb],
 )
 
