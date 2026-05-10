@@ -58,7 +58,7 @@ def masked_accuracy(y_true, y_pred):
 config = ModelConfig()
 model = TinyLM(config)
 
-optimizer = tf.keras.optimizers.Adam(1e-4)
+optimizer = tf.keras.optimizers.Adam(1e-3)
 
 model.compile(
     optimizer=optimizer,
@@ -70,7 +70,7 @@ model.compile(
 model.fit(
     dataset,
     validation_data=val_dataset,
-    epochs=100,
+    epochs=1,
     callbacks=[tb_cb],
 )
 

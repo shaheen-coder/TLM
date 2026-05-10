@@ -105,12 +105,15 @@ class TinyLM(Model):
 
         x = self.dropout(x, training=training)
 
+        # mask
+        attn_mask = self._causal_mask(x)
+
         # ---- Self Attention ----
         attn_out = self.attention(
             query=x,
             key=x,
             value=x,
-            use_causal_mask=True,
+            attention_mask=attn_mask,
             training=training,
         )
         x = self.add1([x, attn_out])
