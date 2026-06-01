@@ -16,16 +16,24 @@ tb_cb = tf.keras.callbacks.TensorBoard(
     update_freq="epoch",
 )
 
-# --- Data Loading ---
-input_arr = np.load("datasets/input.npy", mmap_mode="r")
-target_arr = np.load("datasets/target.npy", mmap_mode="r")
+# --- Foundation dataset ------
+fd_input_arr = np.load("datasets/pretokens/fd_input.npy", mmap_mode="r")
+fd_target_arr = np.load("datasets/pretokens/fd_target.npy", mmap_mode="r")
 
-dataset = tf.data.Dataset.from_tensor_slices((input_arr, target_arr))
-dataset = dataset.shuffle(10000).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+# ---- fine tune ds -------
+ft_input_arr = np.load("datasets/pretokens/ft_input.npy", mmap_mode="r")
+ft_target_arr = np.load("datasets/pretokens/ft_target.npy", mmap_mode="r")
+
+fd_dataset = tf.data.Dataset.from_tensor_slices((fd_input_arr, fd_target_arr))
+fd_dataset = fd_dataset.shuffle(10000).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+
+
+ft_dataset = tf.data.Dataset.from_tensor_slices((ft_input_arr, ft_target_arr))
+ft_dataset = ft_dataset.shuffle(10000).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 # Validation
-val_input_arr = np.load("datasets/val_input.npy", mmap_mode="r")
-val_target_arr = np.load("datasets/val_target.npy", mmap_mode="r")
+val_input_arr = np.load("datasets/pretokens/ft_val_input.npy", mmap_mode="r")
+val_target_arr = np.load("datasets/pretokens/tf_val_target.npy", mmap_mode="r")
 
 val_dataset = tf.data.Dataset.from_tensor_slices((val_input_arr, val_target_arr))
 val_dataset = val_dataset.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
@@ -69,11 +77,18 @@ model.compile(
 )
 
 # --- Training ---
-model.fit(
-    dataset,
-    validation_data=val_dataset,
-    epochs=5,
-    callbacks=[tb_cb],
-)
+EPOCH : int = 5
+for epoch in range(EPOCH):
+    model.fit(
+        fd_dataset,
+        epochs=1,
+        callbacks=[tb_cb],
+    )
+    model.fit(
+        ft_dataset,
+        validation_data=val_dataset,
+        epochs=1,
+        callbacks=[tb_cb],
+    )
 
 model.save("tlm.keras")

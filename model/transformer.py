@@ -2,7 +2,6 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import (
     Embedding,
     Dense,
-    MultiHeadAttention,
     Add,
     LayerNormalization,
     Dropout,
@@ -17,7 +16,7 @@ import tensorflow as tf
 
 # custom imoprt
 from model.config import ModelConfig
-
+from model.attention import MultiHeadAttention
 
 @register_keras_serializable(package="tinylm")
 class TinyLM(Model):
