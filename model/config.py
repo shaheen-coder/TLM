@@ -5,7 +5,7 @@ from dataclasses import dataclass
 @register_keras_serializable(package="tinylm")
 @dataclass(frozen=True)
 class ModelConfig:
-    vocab_size: int = 10840
+    vocab_size: int = 10000
     d_model: int = 128
     num_heads: int = 4
     dff: int = 256

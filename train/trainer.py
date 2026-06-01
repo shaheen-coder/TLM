@@ -33,7 +33,7 @@ ft_dataset = ft_dataset.shuffle(10000).batch(BATCH_SIZE).prefetch(tf.data.AUTOTU
 
 # Validation
 val_input_arr = np.load("datasets/pretokens/ft_val_input.npy", mmap_mode="r")
-val_target_arr = np.load("datasets/pretokens/tf_val_target.npy", mmap_mode="r")
+val_target_arr = np.load("datasets/pretokens/ft_val_target.npy", mmap_mode="r")
 
 val_dataset = tf.data.Dataset.from_tensor_slices((val_input_arr, val_target_arr))
 val_dataset = val_dataset.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)

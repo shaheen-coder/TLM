@@ -4,6 +4,7 @@ from tensorflow.keras.layers import (
     Dense,
     Add,
     LayerNormalization,
+    MultiHeadAttention,
     Dropout,
 )
 from tensorflow.keras.saving import (
@@ -16,7 +17,7 @@ import tensorflow as tf
 
 # custom imoprt
 from model.config import ModelConfig
-from model.attention import MultiHeadAttention
+# from model.attention import MultiHeadAttention
 
 @register_keras_serializable(package="tinylm")
 class TinyLM(Model):
