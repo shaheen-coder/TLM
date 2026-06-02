@@ -1,10 +1,6 @@
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (
     Embedding,
-    Dense,
-    Add,
-    LayerNormalization,
-    MultiHeadAttention,
     Dropout,
 )
 from tensorflow.keras.saving import (
@@ -12,11 +8,11 @@ from tensorflow.keras.saving import (
     serialize_keras_object,
     deserialize_keras_object,
 )
-from keras_hub.layers import RotaryEmbedding
 import tensorflow as tf
 
 # custom imoprt
 from model.config import ModelConfig
+from model.block import TransformerBlock
 # from model.attention import MultiHeadAttention
 
 @register_keras_serializable(package="tinylm")
@@ -31,38 +27,21 @@ class TinyLM(Model):
             mask_zero=True,
             name="token_embedding",
         )
-        # --------  ROPE -----------
-        self.rope = RotaryEmbedding(
-            max_wavelength=10000,
-            sequence_axis=1,
-            feature_axis=-1,
-            name="rope",
-        )
-
         self.dropout = Dropout(config.dropout)
 
         # ---- Self Attention ----
-        self.attention = MultiHeadAttention(
-            num_heads=config.num_heads,
-            key_dim=config.d_model // config.num_heads,
-            dropout=config.dropout,
-            name="self_attention",
-        )
-
-        self.add1 = Add()
-        self.norm1 = LayerNormalization(epsilon=1e-6)
-
-        # ---- Feed Forward ----
-        self.ffn = tf.keras.Sequential(
-            [
-                Dense(config.dff, activation="relu"),
-                Dense(config.d_model),
-            ]
-        )
-
-        self.add2 = Add()
-        self.norm2 = LayerNormalization(epsilon=1e-6)
-
+        self.blocks = [
+            TransformerBlock(
+                d_model=config.d_model,
+                num_heads=config.num_heads,
+                dff=config.dff,
+                dropout=config.dropout,
+                rope_max_wavelength=getattr(config, "rope_max_wavelength", 10000),
+                name=f"block_{i}",
+            )
+            for i in range(config.num_layers)
+        ]
+        
         # ---- LM head bias ----
         self.logits_bias = self.add_weight(
             shape=(config.vocab_size,),
@@ -70,6 +49,7 @@ class TinyLM(Model):
             trainable=True,
             name="logits_bias",
         )
+         
 
     # -------- Serialization -------- #
     def get_config(self):
@@ -93,37 +73,29 @@ class TinyLM(Model):
         )
 
         mask = padding_mask[:, tf.newaxis, :] & causal_mask[tf.newaxis, :, :]
-        return mask
+        return mask,padding_mask
 
     # -------- Forward -------- #
     def call(self, inputs, training=False):
 
         x = self.embedding(inputs)
 
-        # apply rope
-        x = self.rope(x)
-
         x = self.dropout(x, training=training)
 
         # mask
-        attn_mask = self._causal_mask(inputs)
+        attn_mask,padding_mask = self._causal_mask(inputs)
 
-        # ---- Self Attention ----
-        attn_out = self.attention(
-            query=x,
-            key=x,
-            value=x,
-            attention_mask=attn_mask,
-            training=training,
-        )
-        x = self.add1([x, attn_out])
-        x = self.norm1(x)
+        # Keep padded positions quiet throughout the network.
+        x *= tf.cast(padding_mask[..., tf.newaxis], x.dtype)
 
-        # ---- FFN ----
-        ffn_out = self.ffn(x, training=training)
-        x = self.add2([x, ffn_out])
-        x = self.norm2(x)
-
+        for block in self.blocks:
+            x = block(
+                    x,
+                    attention_mask=attn_mask,
+                    padding_mask=padding_mask,
+                    training=training,
+                )
+            
         # ---- LM head (tied weights) ----
         logits = tf.matmul(x, self.embedding.embeddings, transpose_b=True)
         logits = logits + self.logits_bias

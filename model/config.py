@@ -8,9 +8,8 @@ class ModelConfig:
     vocab_size: int = 10000
     d_model: int = 128
     num_heads: int = 4
-    dff: int = 256
+    dff: int = 512
     dropout: float = 0.2
-    recurrent_dropout: float = 0.1
     num_layers: int = 2
 
     def get_config(self):

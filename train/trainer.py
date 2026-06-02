@@ -78,17 +78,17 @@ model.compile(
 
 # --- Training ---
 EPOCH : int = 5
-for epoch in range(EPOCH):
-    model.fit(
-        fd_dataset,
-        epochs=1,
-        callbacks=[tb_cb],
-    )
-    model.fit(
-        ft_dataset,
-        validation_data=val_dataset,
-        epochs=1,
-        callbacks=[tb_cb],
-    )
+model.fit(
+    fd_dataset,
+    epochs=EPOCH,
+    callbacks=[tb_cb]
+)
+optimizer.learning_rate.assign(2e-5)
+model.fit(
+    ft_dataset,
+    validation_data=val_dataset,
+    epochs=EPOCH,
+    callbacks=[tb_cb],
+)
 
 model.save("tlm.keras")
