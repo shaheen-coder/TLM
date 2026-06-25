@@ -7,7 +7,7 @@ from model.transformer import TinyLM
 from model.config import ModelConfig
 
 # --- Configuration ---
-BATCH_SIZE = 12
+BATCH_SIZE = 18
 log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
 tb_cb = tf.keras.callbacks.TensorBoard(
     log_dir=log_dir,
@@ -17,8 +17,8 @@ tb_cb = tf.keras.callbacks.TensorBoard(
 )
 
 # --- Foundation dataset ------
-fd_input_arr = np.load("datasets/pretokens/fd_input.npy", mmap_mode="r")
-fd_target_arr = np.load("datasets/pretokens/fd_target.npy", mmap_mode="r")
+# fd_input_arr = np.load("datasets/pretokens/fd_input.npy", mmap_mode="r")
+# fd_target_arr = np.load("datasets/pretokens/fd_target.npy", mmap_mode="r")
 
 # ---- fine tune ds -------
 ft_input_arr = np.load("datasets/pretokens/ft_input.npy", mmap_mode="r")
@@ -77,13 +77,13 @@ model.compile(
 )
 
 # --- Training ---
-FD_EPOCH : int = 5
-model.fit(
-    fd_dataset,
-    epochs=FD_EPOCH,
-    callbacks=[tb_cb]
-)
-FT_EPOCH : int = 50
+# FD_EPOCH : int = 5
+# model.fit(
+    # fd_dataset,
+    # epochs=FD_EPOCH,
+    # callbacks=[tb_cb]
+# )
+FT_EPOCH : int = 2
 optimizer.learning_rate.assign(2e-5)
 model.fit(
     ft_dataset,
