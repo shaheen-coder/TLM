@@ -48,13 +48,29 @@ class PreTokens:
                 yield row
 
     def _encode_fine_tune_tokens(self, prompt: str, response: str) -> List[int]:
-        prompt_text = f"[PROMPT] {prompt}"
-        input_text = f"{prompt_text} [AI] {response}[END]"
 
-        # Prompt → fixed 50 tokens
-        prompt_ids = self.tokenizer.encode(input_text).ids
+        PROMPT_MAX = 19 # first token reseverd for start token
+        RESPONSE_MAX = 19 # last token reserved for end token
+        MAX_CONTENT = 40
 
-        return prompt_ids
+        pad_id = self.tokenizer.token_to_id("[PAD]")
+        start_id = self.tokenizer.token_to_id("[START]") 
+        prompt_ids = [start_id] + self.tokenizer.encode(prompt).ids[:PROMPT_MAX]
+
+        response_text = f"[AI] {response}"
+        response_ids = self.tokenizer.encode(response_text).ids[:RESPONSE_MAX]
+
+        prompt_ids += [pad_id] * ( PROMPT_MAX + 1  - len(prompt_ids) )
+        response_ids += [pad_id] * ( RESPONSE_MAX - len(response_ids) )
+                
+        response_ids.append(self.tokenizer.token_to_id("[END]"))
+        
+        input_ids = prompt_ids + response_ids
+
+        assert len(input_ids) == MAX_CONTENT
+
+        return input_ids
+
 
     def get_fine_tune_tokens(self, mode: str = "t"):
         for file_path in self._list_csv_files(mode=mode):

@@ -77,17 +77,18 @@ model.compile(
 )
 
 # --- Training ---
-EPOCH : int = 5
+FD_EPOCH : int = 5
 model.fit(
     fd_dataset,
-    epochs=EPOCH,
+    epochs=FD_EPOCH,
     callbacks=[tb_cb]
 )
+FT_EPOCH : int = 50
 optimizer.learning_rate.assign(2e-5)
 model.fit(
     ft_dataset,
     validation_data=val_dataset,
-    epochs=EPOCH,
+    epochs=FT_EPOCH,
     callbacks=[tb_cb],
 )
 

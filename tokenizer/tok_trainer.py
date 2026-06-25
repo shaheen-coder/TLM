@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 files_lst = [str(p) for p in Path("datasets").glob("*.csv")]
-f2 = [str(p) for p in Path("datasets").glob("*.txt")]
-files_lst.extend(f2)
+#f2 = [str(p) for p in Path("datasets").glob("*.txt")]
+#files_lst.extend(f2)
 tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
 
 tokenizer.pre_tokenizer = Whitespace()

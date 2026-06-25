@@ -34,6 +34,7 @@ val_target_arr = np.array(val_target_lst, dtype=np.int32)
 np.save("datasets/pretokens/ft_val_input.npy", val_input_arr)
 np.save("datasets/pretokens/ft_val_target.npy", val_target_arr)
 
+'''
 # -----------------------------------------------------------------------------------------
 #                             Foundational tokenss
 # -----------------------------------------------------------------------------------------
@@ -59,3 +60,4 @@ target_arr = np.array(target_list, dtype=np.int32)
 
 np.save("datasets/pretokens/fd_input.npy", input_arr)
 np.save("datasets/pretokens/fd_target.npy", target_arr)
+'''
