@@ -24,8 +24,8 @@ tb_cb = tf.keras.callbacks.TensorBoard(
 ft_input_arr = np.load("datasets/pretokens/ft_input.npy", mmap_mode="r")
 ft_target_arr = np.load("datasets/pretokens/ft_target.npy", mmap_mode="r")
 
-fd_dataset = tf.data.Dataset.from_tensor_slices((fd_input_arr, fd_target_arr))
-fd_dataset = fd_dataset.shuffle(10000).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
+# fd_dataset = tf.data.Dataset.from_tensor_slices((fd_input_arr, fd_target_arr))
+# fd_dataset = fd_dataset.shuffle(10000).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
 
 
 ft_dataset = tf.data.Dataset.from_tensor_slices((ft_input_arr, ft_target_arr))
