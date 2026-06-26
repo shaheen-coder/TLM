@@ -106,11 +106,11 @@ if __name__ == "__main__":
     inferencer = TinyLMInference(model, bos_id, eos_id, max_len=50)
 
     samples = [
-        "vanakkam shaAI, epdi irukka?",
-        "hello shaAI",
-        "hi shaAI, good morning",
-        "hey shaAI",
-        "shaAI, unga peru epdi varum?nee yaaru shaAI?",
+        "Hello, How are you ?",
+        "I love you",
+        "How can I contribute to Spark?",
+        "What is AI?",
+        "Are you a fan of Google or Microsoft?",
     ]
     print("--------------------------- greedy -------------------------- ")
     for sample in samples:
