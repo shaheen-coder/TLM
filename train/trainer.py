@@ -8,7 +8,7 @@ from model.transformer import TinyLM
 from model.config import ModelConfig
 
 # --- Configuration ---
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 FT_EPOCH : int = 10
 
 log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
