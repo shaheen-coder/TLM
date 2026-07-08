@@ -6,18 +6,39 @@ import tensorflow as tf
 
 from model.transformer import TinyLM
 from model.config import ModelConfig
-
+from model.lossbreaker import LossBreaker
 # --- Configuration ---
 BATCH_SIZE = 64
 FT_EPOCH : int = 10
+BREAK_LOSS = 1.0
 
 log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
+ckpt_dir = os.path.join("checkpoint",datetime.now().strftime("%Y%m%d-%H%M%S"))
+nan_cb = tf.keras.callbacks.TerminateOnNaN()
+
 tb_cb = tf.keras.callbacks.TensorBoard(
     log_dir=log_dir,
     histogram_freq=0,
     write_graph=False,
     update_freq="epoch",
 )
+ckpt_cb = tf.keras.callbacks.ModelCheckpoint(
+    filepath=os.path.join(ckpt_dir, "best_model.keras"),
+    monitor="val_loss",
+    mode="min",
+    save_best_only=True,
+    save_weights_only=False,
+    verbose=1,
+)
+early_stop_cb = tf.keras.callbacks.EarlyStopping(
+    monitor="val_loss",
+    mode="min",
+    patience=3,
+    min_delta=1e-4,
+    restore_best_weights=True,
+    verbose=1,
+)
+loss_breaker_cb = LossBreaker(train_threshold=BREAK_LOSS, val_threshold=BREAK_LOSS)
 
 # --- Foundation dataset ------
 # fd_input_arr = np.load("datasets/pretokens/fd_input.npy", mmap_mode="r")
@@ -46,7 +67,7 @@ steps_per_epoch = math.ceil(len(ft_input_arr) // BATCH_SIZE)
 total_steps = steps_per_epoch * FT_EPOCH
 
 lr_schedule = tf.keras.optimizers.schedules.CosineDecay(
-    initial_learning_rate=1e-4,
+    initial_learning_rate=3e-4,
     decay_steps=total_steps,
     alpha=0.1
 )
@@ -103,7 +124,7 @@ model.fit(
     ft_dataset,
     validation_data=val_dataset,
     epochs=FT_EPOCH,
-    callbacks=[tb_cb],
+    callbacks=[tb_cb,ckpt_cb, early_stop_cb, nan_cb, loss_breaker_cb],
 )
 
 model.save("tlm.keras")
