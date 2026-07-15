@@ -6,7 +6,7 @@ import tensorflow as tf
 
 from model.transformer import TinyLM
 from model.config import ModelConfig
-from model.lossbreaker import LossBreaker
+from train.lossbreaker import LossBreaker
 # --- Configuration ---
 BATCH_SIZE = 64
 FT_EPOCH : int = 10
