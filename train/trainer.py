@@ -125,6 +125,7 @@ model.fit(
     validation_data=val_dataset,
     epochs=FT_EPOCH,
     callbacks=[tb_cb,ckpt_cb, early_stop_cb, nan_cb, loss_breaker_cb],
+    verbose=0,
 )
 
 model.save("tlm.keras")
