@@ -9,7 +9,7 @@ from model.config import ModelConfig
 from train.lossbreaker import LossBreaker
 # --- Configuration ---
 BATCH_SIZE = 64
-FT_EPOCH : int = 10
+FT_EPOCH : int = 5
 BREAK_LOSS = 1.0
 
 log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
@@ -125,7 +125,6 @@ model.fit(
     validation_data=val_dataset,
     epochs=FT_EPOCH,
     callbacks=[tb_cb,ckpt_cb, early_stop_cb, nan_cb, loss_breaker_cb],
-    verbose=0,
 )
 
 model.save("tlm.keras")

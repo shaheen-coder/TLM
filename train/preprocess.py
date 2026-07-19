@@ -6,7 +6,7 @@ from typing import List, Generator
 
 class PreTokens:
     def __init__(
-        self, dir_name: str, tokenizer_file: str = "tokenizers/tiny_lm_tokenizer.json"
+        self, dir_name: str, tokenizer_file: str = "tokenizer/tiny_lm_tokenizer.json"
     ) -> None:
 
         self.dir_path = Path(dir_name)
