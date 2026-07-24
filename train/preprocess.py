@@ -49,27 +49,18 @@ class PreTokens:
 
     def _encode_fine_tune_tokens(self, prompt: str, response: str) -> List[int]:
 
-        PROMPT_MAX = 19 # first token reseverd for start token
-        RESPONSE_MAX = 19 # last token reserved for end token
-        MAX_CONTENT = 40
+        MAX_CONTENT = 35
 
         pad_id = self.tokenizer.token_to_id("[PAD]")
-        start_id = self.tokenizer.token_to_id("[START]") 
-        prompt_ids = [start_id] + self.tokenizer.encode(prompt).ids[:PROMPT_MAX]
+        template = f"[START] {prompt} [AI] {response} [END]"
 
-        response_text = f"[AI] {response}"
-        response_ids = self.tokenizer.encode(response_text).ids[:RESPONSE_MAX]
+        ids = self.tokenizer.encode(template).ids[:MAX_CONTENT]
 
-        prompt_ids += [pad_id] * ( PROMPT_MAX + 1  - len(prompt_ids) )
-        response_ids += [pad_id] * ( RESPONSE_MAX - len(response_ids) )
-                
-        response_ids.append(self.tokenizer.token_to_id("[END]"))
-        
-        input_ids = prompt_ids + response_ids
+        ids += [pad_id] * ( MAX_CONTENT - len(ids) )
 
-        assert len(input_ids) == MAX_CONTENT
+        assert len(ids) == MAX_CONTENT
 
-        return input_ids
+        return ids
 
 
     def get_fine_tune_tokens(self, mode: str = "t"):
