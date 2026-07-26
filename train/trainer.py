@@ -9,8 +9,8 @@ from model.config import ModelConfig
 from train.lossbreaker import LossBreaker
 # --- Configuration ---
 BATCH_SIZE = 64
-FT_EPOCH : int = 5
-BREAK_LOSS = 1.0
+FT_EPOCH : int = 8
+BREAK_LOSS = 2.0
 
 log_dir = os.path.join("logs", datetime.now().strftime("%Y%m%d-%H%M%S"))
 ckpt_dir = os.path.join("checkpoint",datetime.now().strftime("%Y%m%d-%H%M%S"))
